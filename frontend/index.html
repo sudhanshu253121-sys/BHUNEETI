@@ -1,0 +1,1853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>National Land Governance Platform (NLGP) | Govt of India</title>
+  <meta name="description" content="National Digital Platform for Research and Policy Innovation in Land Governance - ULPIN Bhu-Aadhar Ecosystem">
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gov: {
+              navy: '#0f2942',
+              navyDark: '#0a1d30',
+              blue: '#1e40af',
+              lightBlue: '#3b82f6',
+              emerald: '#059669',
+              greenLight: '#10b981',
+              amber: '#d97706',
+              crimson: '#dc2626',
+              bgLight: '#f8fafc',
+              border: '#e2e8f0',
+              card: '#ffffff'
+            }
+          },
+          fontFamily: {
+            sans: ['Fira Sans', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['Fira Code', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Fira Sans & Fira Code (Accessibility & Data Density) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS & JS for GIS Mapping -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Chart.js for Dashboards -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Fira Sans', sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+    .font-code {
+      font-family: 'Fira Code', monospace;
+    }
+    /* Custom scrollbars for data tables and panels */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    /* Leaflet custom marker pulsation */
+    .pulse-marker {
+      box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+      animation: pulse-ring 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
+    }
+    @keyframes pulse-ring {
+      0% {
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+      }
+      70% {
+        box-shadow: 0 0 0 12px rgba(220, 38, 38, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-100 text-slate-800 antialiased">
+
+  <!-- ================================================================= -->
+  <!-- FULL-SCREEN LOGIN PAGE (shown first; hidden after auth)            -->
+  <!-- ================================================================= -->
+  <div id="login-page" class="fixed inset-0 z-50 flex flex-col lg:flex-row min-h-screen w-full" role="main">
+
+    <!-- LEFT: Form -->
+    <section class="w-full lg:w-1/2 flex flex-col justify-between p-6 sm:p-10 lg:p-14 bg-white">
+      <div>
+        <!-- National Brand -->
+        <div class="flex items-center space-x-3 mb-8">
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#0f2942] to-[#1e40af] flex items-center justify-center text-emerald-400 shadow-lg">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </div>
+          <div>
+            <div class="text-[10px] font-bold tracking-widest text-[#0f2942] uppercase">भारत सरकार • Government of India</div>
+            <div class="text-base font-bold text-slate-900 leading-tight">National Land Governance Platform</div>
+            <div class="text-[11px] text-slate-500">Department of Land Resources (DoLR) • MoRD</div>
+          </div>
+        </div>
+
+        <h1 class="text-2xl font-black text-[#0f2942] tracking-tight">Welcome to NLGP</h1>
+        <p class="text-xs text-slate-500 mt-1 mb-7">Secure, role-based access to India's unified land cadastre, GIS maps, and AI-powered policy analytics.</p>
+
+        <!-- Auth Feedback -->
+        <div id="login-feedback" class="hidden p-3.5 rounded-lg mb-4 text-xs font-medium border flex items-center space-x-2"></div>
+
+        <form id="login-form" onsubmit="handleLogin(event)" novalidate class="space-y-4">
+
+          <!-- RBAC Dropdown -->
+          <div>
+            <label for="login-role" class="block text-xs font-semibold text-slate-700 mb-1">Access Role (RBAC) <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <select id="login-role" class="w-full pl-3 pr-9 py-2.5 text-xs border border-slate-300 rounded-lg bg-slate-50 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1e40af] cursor-pointer appearance-none" onchange="onRoleChange(this.value)">
+                <option value="Official">Government Official (Revenue / Cadastre Administration)</option>
+                <option value="Researcher">Research Scholar / Policy Analyst</option>
+                <option value="Citizen">Citizen / Land Owner (Bhu-Aadhar)</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </div>
+            </div>
+            <p id="role-desc" class="text-[11px] text-slate-500 mt-1">Revenue administration, cadastral audits &amp; ML analytics.</p>
+          </div>
+
+          <!-- Email / ULPIN -->
+          <div>
+            <label for="login-user" class="block text-xs font-semibold text-slate-700 mb-1">
+              <span id="login-user-label">Official Email or Employee ID</span> <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              </div>
+              <input id="login-user" type="text" placeholder="rajesh.varma@nic.in"
+                aria-invalid="false"
+                class="w-full pl-9 pr-3 py-2.5 text-xs border border-slate-300 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#1e40af] focus:border-transparent focus:outline-none transition">
+            </div>
+            <p id="login-user-err" class="hidden text-[11px] text-red-600 mt-1 font-medium">⚠ Please enter your identifier to continue.</p>
+          </div>
+
+          <!-- Password -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label for="login-pass" class="block text-xs font-semibold text-slate-700">Password / Passkey <span class="text-red-500">*</span></label>
+              <a href="#" onclick="alert('Password reset link sent to registered contact.'); return false;" class="text-[11px] font-semibold text-blue-700 hover:underline">Forgot Password?</a>
+            </div>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 11V7a5 5 0 0110 0v4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <input id="login-pass" type="password" placeholder="••••••••••••"
+                aria-invalid="false"
+                class="w-full pl-9 pr-10 py-2.5 text-xs border border-slate-300 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#1e40af] focus:border-transparent focus:outline-none transition">
+              <button type="button" onclick="togglePass()" aria-label="Toggle password visibility" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 focus:outline-none">
+                <svg id="login-eye" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              </button>
+            </div>
+            <p id="login-pass-err" class="hidden text-[11px] text-red-600 mt-1 font-medium">⚠ Password must be at least 6 characters.</p>
+          </div>
+
+          <!-- Remember Me -->
+          <div class="flex items-center justify-between">
+            <label class="flex items-center space-x-2 text-xs text-slate-600 cursor-pointer select-none">
+              <input type="checkbox" checked class="w-3.5 h-3.5 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+              <span>Keep me signed in</span>
+            </label>
+            <span class="text-[10px] font-mono text-slate-400">TLS 1.3 • NIC Cloud</span>
+          </div>
+
+          <!-- Submit -->
+          <button id="login-btn" type="submit"
+            class="w-full mt-1 bg-[#0f2942] hover:bg-[#1e40af] text-white py-3 rounded-xl text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0f2942] transition-all duration-200 flex items-center justify-center space-x-2">
+            <span id="login-btn-text">Sign In to NLGP</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </button>
+        </form>
+
+        <!-- Alt SSO -->
+        <div class="mt-6 pt-5 border-t border-slate-200">
+          <p class="text-center text-[10px] uppercase tracking-widest text-slate-400 font-semibold mb-3">Or continue with</p>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" class="flex items-center justify-center space-x-2 py-2 px-3 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 transition">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>MeriPehchaan SSO</span>
+            </button>
+            <button type="button" class="flex items-center justify-center space-x-2 py-2 px-3 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 transition">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+              <span>e-Pramaan Auth</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Security -->
+      <div class="mt-8 pt-4 border-t border-slate-100 flex flex-wrap justify-between text-[10px] text-slate-400 gap-2">
+        <span>Protected under IT Act 2000 &amp; DPDP 2023</span>
+        <span>Helpdesk: 1800-11-BHUAADHAR</span>
+      </div>
+    </section>
+
+    <!-- RIGHT: High-tech Visualization Panel -->
+    <section class="hidden lg:flex w-1/2 bg-[#0a1d30] text-white p-12 xl:p-16 flex-col justify-between relative overflow-hidden">
+      <!-- Grid backdrop -->
+      <div class="absolute inset-0 opacity-15 pointer-events-none">
+        <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="lp-grid" width="36" height="36" patternUnits="userSpaceOnUse">
+              <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#38bdf8" stroke-width="0.8"/>
+              <circle cx="36" cy="0" r="1.5" fill="#34d399"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#lp-grid)"/>
+        </svg>
+      </div>
+
+      <div class="relative z-10 flex justify-between items-center">
+        <span class="text-[10px] font-mono bg-slate-800/90 px-2.5 py-1 rounded-full border border-slate-700 text-emerald-300">
+          <span class="mr-1.5">●</span>National Cadastral Grid: Active
+        </span>
+        <span class="text-[10px] font-mono text-slate-500">EPSG:4326 / WGS84</span>
+      </div>
+
+      <!-- Central GIS Artwork -->
+      <div class="relative z-10 my-auto text-center">
+        <div class="w-52 h-52 mx-auto mb-8 rounded-2xl bg-gradient-to-tr from-blue-900/70 to-emerald-950/60 p-5 border border-emerald-500/40 shadow-2xl flex items-center justify-center relative">
+          <svg viewBox="0 0 100 100" fill="none" class="w-36 h-36">
+            <!-- Outer cadastral polygon -->
+            <polygon points="50,10 88,32 74,82 26,85 12,42" stroke="#10b981" stroke-width="2" fill="rgba(16,185,129,0.1)"/>
+            <!-- Inner triangulation lines -->
+            <line x1="50" y1="10" x2="50" y2="55" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <line x1="88" y1="32" x2="50" y2="55" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <line x1="26" y1="85" x2="50" y2="55" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="4 3"/>
+            <!-- Node dots -->
+            <circle cx="50" cy="55" r="5" fill="#38bdf8"/>
+            <circle cx="88" cy="32" r="4" fill="#10b981"/>
+            <circle cx="26" cy="85" r="4" fill="#fbbf24"/>
+            <circle cx="50" cy="10" r="3" fill="#818cf8"/>
+            <!-- Risk pulse ring -->
+            <circle cx="88" cy="32" r="9" stroke="#dc2626" stroke-width="1" stroke-dasharray="3 2" opacity="0.7"/>
+          </svg>
+          <!-- Floating badges -->
+          <div class="absolute -top-4 -right-5 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-[10px] font-mono text-emerald-300 shadow-md">ULPIN 27-520-004</div>
+          <div class="absolute -bottom-4 -left-5 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-[10px] font-mono text-blue-300 shadow-md">PostGIS 3D Active</div>
+        </div>
+
+        <h2 class="text-2xl font-bold text-white tracking-tight leading-snug">Spatial Intelligence for<br>Unified Land Administration</h2>
+        <p class="text-xs text-slate-300 leading-relaxed mt-3 max-w-sm mx-auto">
+          Consolidating 34.8+ Crore land parcels across 28 States and 8 Union Territories through automated API Setu, Bhashini NLP, and XGBoost ML pipelines.
+        </p>
+
+        <!-- Quick metrics -->
+        <div class="grid grid-cols-3 gap-3 mt-8 pt-6 border-t border-slate-800">
+          <div>
+            <div class="text-xl font-bold text-emerald-400 font-mono">34.82 Cr</div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">ULPINs Issued</div>
+          </div>
+          <div>
+            <div class="text-xl font-bold text-blue-400 font-mono">89.4%</div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">Geo-Referenced</div>
+          </div>
+          <div>
+            <div class="text-xl font-bold text-amber-400 font-mono">&lt;15ms</div>
+            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">ES Latency</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative z-10 flex justify-between text-[10px] text-slate-500 pt-4 border-t border-slate-800">
+        <span>DoLR • MoRD • Govt of India</span>
+        <span class="font-mono">NLGP v2.4.0</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- Main App (hidden until login) -->
+  <div id="main-app" class="hidden flex-col min-h-screen opacity-0 transition-opacity duration-500">
+
+  <!-- TOP GOV BANNER -->
+  <header class="bg-gov-navy text-white text-xs py-1.5 px-4 sm:px-8 border-b border-gov-navyDark flex justify-between items-center z-40">
+    <div class="flex items-center space-x-3">
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-gov-greenLight animate-ping"></span>
+      <span class="font-medium tracking-wide">भारत सरकार | Government of India</span>
+      <span class="hidden md:inline text-slate-400">|</span>
+      <span class="hidden md:inline text-slate-300">Department of Land Resources (DoLR) • MoRD</span>
+    </div>
+    <div class="flex items-center space-x-4 text-slate-300">
+      <span class="hidden sm:inline font-mono">IST <span id="live-clock">19:30:00</span></span>
+      <div class="flex space-x-1.5 bg-slate-800/80 px-2 py-0.5 rounded text-[11px] border border-slate-700">
+        <button class="font-semibold text-white px-1 hover:text-emerald-400 focus:outline-none">EN</button>
+        <span class="text-slate-500">|</span>
+        <button class="text-slate-300 px-1 hover:text-emerald-400 focus:outline-none">हिन्दी</button>
+        <span class="text-slate-500">|</span>
+        <button class="text-slate-300 px-1 hover:text-emerald-400 focus:outline-none">मराठी</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN NAVIGATION & BRAND -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Brand Logo & Title -->
+        <div class="flex items-center space-x-3">
+          <!-- Ashoka Emblem Symbol (SVG) -->
+          <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-gov-navy to-gov-blue flex items-center justify-center text-white shadow-md">
+            <svg class="w-6 h-6 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-lg font-bold text-gov-navy tracking-tight leading-none">NLGP India</h1>
+              <span class="bg-emerald-100 text-emerald-800 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-emerald-300">Bhu-Aadhar 2.0</span>
+            </div>
+            <p class="text-[11px] text-slate-500 font-medium">National Land Governance & Policy Innovation Platform</p>
+          </div>
+        </div>
+
+        <!-- Center AI / Elasticsearch Search Bar -->
+        <div class="flex-1 max-w-xl mx-4 lg:mx-8 relative">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+            <input 
+              id="global-search-input"
+              type="text" 
+              placeholder="Search 14-digit ULPIN, State Khasra/Gat, Owner, or Policy (e.g. 'Pune 7/12', 'Khatauni', '2752000498124')..."
+              class="w-full pl-9 pr-24 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all shadow-inner"
+              oninput="handleSearch(this.value)"
+            >
+            <div class="absolute inset-y-0 right-0 pr-2 flex items-center space-x-1">
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-200 text-slate-600">RAG+ES</span>
+              <kbd class="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-300 rounded text-slate-500">⌘K</kbd>
+            </div>
+          </div>
+
+          <!-- Dynamic Search Results Dropdown -->
+          <div id="search-results-dropdown" class="hidden absolute left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-50 max-h-96 overflow-y-auto">
+            <div class="p-2.5 bg-slate-50 border-b border-slate-100 flex justify-between items-center text-xs text-slate-500">
+              <span class="font-medium">Elasticsearch Inverted Index & Bhashini Match</span>
+              <span class="text-[11px] text-emerald-600 font-mono">Query latency: 12ms</span>
+            </div>
+            <div id="search-results-list" class="divide-y divide-slate-100 text-sm">
+              <!-- Injected via JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Role Badges & Actions -->
+        <div class="flex items-center space-x-3">
+          <button onclick="openLoginModal()" class="flex items-center space-x-1.5 px-3 py-1.5 bg-gov-navy hover:bg-gov-blue text-white rounded-lg text-xs font-semibold shadow-sm transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            </svg>
+            <span>Sign In / RBAC</span>
+          </button>
+          <div class="hidden md:flex flex-col text-right">
+            <span id="active-user-name" class="text-xs font-semibold text-slate-800">Dr. Rajesh Varma</span>
+            <span id="active-user-role" class="text-[10px] text-slate-500">Senior Policy Advisor (Official)</span>
+          </div>
+          <div class="w-9 h-9 rounded-full bg-slate-200 border-2 border-gov-blue/20 flex items-center justify-center text-gov-navy font-bold text-xs shadow-inner">
+            RV
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- BODY CONTENT AREA -->
+  <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col lg:flex-row gap-6">
+
+    <!-- LEFT SIDEBAR / TAB NAVIGATION -->
+    <aside class="w-full lg:w-64 shrink-0 flex flex-col space-y-4">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 space-y-1">
+        <div class="px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Operational Modules</div>
+        
+        <button onclick="switchView('dashboard')" id="nav-dashboard" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-semibold bg-blue-50 text-gov-blue transition-all border border-blue-200">
+          <svg class="w-4 h-4 text-gov-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+            <rect x="14" y="12" width="7" height="9" rx="1"></rect>
+            <rect x="3" y="16" width="7" height="5" rx="1"></rect>
+          </svg>
+          <span>National Dashboard</span>
+        </button>
+
+        <button onclick="switchView('gis-map')" id="nav-gis-map" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all">
+          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+            <line x1="8" y1="2" x2="8" y2="18"></line>
+            <line x1="16" y1="6" x2="16" y2="22"></line>
+          </svg>
+          <span>GIS Cadastral Map</span>
+          <span class="ml-auto bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded">Live</span>
+        </button>
+
+        <button onclick="switchView('ml-predictor')" id="nav-ml-predictor" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all">
+          <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          <span>ML Risk Predictor</span>
+          <span class="ml-auto bg-purple-100 text-purple-700 text-[10px] font-bold px-1.5 py-0.5 rounded">XGBoost</span>
+        </button>
+
+        <button onclick="switchView('pipeline')" id="nav-pipeline" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all">
+          <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span>Airflow ETL & Bhashini</span>
+        </button>
+      </div>
+
+      <!-- SYSTEM INTEGRITY STATUS CARD -->
+      <div class="bg-gov-navy text-white rounded-xl p-4 shadow-sm space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-300">Inter-State Pipeline</span>
+          <span class="px-2 py-0.5 text-[10px] font-mono bg-emerald-500/20 text-emerald-300 rounded border border-emerald-500/40">Healthy</span>
+        </div>
+        <div class="space-y-1.5 text-xs text-slate-300">
+          <div class="flex justify-between">
+            <span class="text-slate-400">API Setu Gateway:</span>
+            <span class="font-mono text-emerald-400">Connected</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Bhashini Transliteration:</span>
+            <span class="font-mono text-emerald-400">99.8% Acc</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">PostGIS Geometry Clustered:</span>
+            <span class="font-mono text-blue-300">28 States</span>
+          </div>
+        </div>
+        <div class="pt-2 border-t border-slate-700/60 text-[11px] text-slate-400">
+          Last Nightly Airflow Sync: <span class="text-slate-200 font-mono">02:00:14 IST</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT MAIN WORKSPACE -->
+    <main class="flex-1 flex flex-col space-y-6 min-w-0">
+
+      <!-- VIEW 1: NATIONAL DASHBOARD -->
+      <section id="view-dashboard" class="space-y-6">
+        <!-- KPI METRICS GRID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- KPI 1 -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-blue-300 transition-colors">
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total ULPINs Issued</span>
+              <span class="p-1.5 bg-blue-50 text-gov-blue rounded-lg">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg>
+              </span>
+            </div>
+            <div class="mt-3">
+              <div class="text-2xl font-bold text-slate-900 font-code">34.82 Cr</div>
+              <div class="flex items-center mt-1 text-xs text-emerald-600 font-medium">
+                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                <span>+2.4% MoM Digitization</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI 2 -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-emerald-300 transition-colors">
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Spatial Cadastral Map</span>
+              <span class="p-1.5 bg-emerald-50 text-gov-emerald rounded-lg">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+              </span>
+            </div>
+            <div class="mt-3">
+              <div class="text-2xl font-bold text-slate-900 font-code">89.4%</div>
+              <div class="flex items-center mt-1 text-xs text-emerald-600 font-medium">
+                <span>Geo-referenced to WGS84</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI 3 -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-amber-300 transition-colors">
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Land Disputes</span>
+              <span class="p-1.5 bg-amber-50 text-gov-amber rounded-lg">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+              </span>
+            </div>
+            <div class="mt-3">
+              <div class="text-2xl font-bold text-slate-900 font-code">42,190</div>
+              <div class="flex items-center mt-1 text-xs text-amber-600 font-medium">
+                <span>-4.8% after ULPIN deduplication</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI 4 -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-red-300 transition-colors">
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">High Conversion Risk</span>
+              <span class="p-1.5 bg-red-50 text-gov-crimson rounded-lg">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+              </span>
+            </div>
+            <div class="mt-3">
+              <div class="text-2xl font-bold text-gov-crimson font-code">1,845 Parcels</div>
+              <div class="flex items-center mt-1 text-xs text-red-600 font-medium">
+                <span>Flagged by XGBoost AI</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHARTS SECTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Land Conversion Trend (Chart.js) -->
+          <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">National Land-Use Conversion Velocity (2015-2025)</h3>
+                <p class="text-xs text-slate-500">Agricultural land diverted to urban/commercial infrastructure (Lakh Hectares)</p>
+              </div>
+              <span class="px-2.5 py-1 text-xs font-medium bg-slate-100 text-slate-600 rounded-md">Annual Macro Trend</span>
+            </div>
+            <div class="h-64">
+              <canvas id="trendChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Land Distribution Donut -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div class="mb-2">
+              <h3 class="text-sm font-bold text-slate-900">Land Classification Breakdown</h3>
+              <p class="text-xs text-slate-500">PostGIS Standardized Classification</p>
+            </div>
+            <div class="h-56 relative flex items-center justify-center">
+              <canvas id="distributionChart"></canvas>
+            </div>
+            <div class="mt-2 text-[11px] text-slate-500 text-center">
+              Source: Consolidated State Revenue Portals & Bhuvan LULC
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT POLICY & DISPUTE INTELLIGENCE TABLE -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-3 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Real-Time Land Parcel Intelligence Stream</h3>
+              <p class="text-xs text-slate-500">Cross-state sync via API Setu & regional transliteration</p>
+            </div>
+            <button onclick="switchView('gis-map')" class="text-xs font-semibold text-gov-blue hover:underline">
+              Inspect on GIS Map →
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="py-2.5 px-4">14-Digit ULPIN</th>
+                  <th class="py-2.5 px-4">State & Revenue Survey</th>
+                  <th class="py-2.5 px-4">Owner (Bhashini Transliterated)</th>
+                  <th class="py-2.5 px-4">Standardized Area</th>
+                  <th class="py-2.5 px-4">XGBoost Risk</th>
+                  <th class="py-2.5 px-4">Legal Status</th>
+                  <th class="py-2.5 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-mono text-slate-700">
+                <tr class="hover:bg-blue-50/40 transition-colors">
+                  <td class="py-2.5 px-4 font-semibold text-gov-blue">27-520-004-98124</td>
+                  <td class="py-2.5 px-4 font-sans">Maharashtra • Gat No. 342 (Haveli, Pune)</td>
+                  <td class="py-2.5 px-4 font-sans">रामचंद्र तुकाराम पाटील (R. T. Patil)</td>
+                  <td class="py-2.5 px-4 font-code">2.45 Ha (6.05 Acre)</td>
+                  <td class="py-2.5 px-4">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-sans font-bold bg-red-100 text-red-800 border border-red-200">88% Critical</span>
+                  </td>
+                  <td class="py-2.5 px-4 font-sans text-amber-700 font-medium">Pending Mutation (4)</td>
+                  <td class="py-2.5 px-4 text-right font-sans">
+                    <button onclick="inspectParcel('27-520-004-98124')" class="text-gov-blue hover:text-blue-800 font-semibold">Inspect</button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-blue-50/40 transition-colors">
+                  <td class="py-2.5 px-4 font-semibold text-gov-blue">09-112-008-41092</td>
+                  <td class="py-2.5 px-4 font-sans">Uttar Pradesh • Khasra 819 (Pindra, Varanasi)</td>
+                  <td class="py-2.5 px-4 font-sans">श्याम सुंदर यादव (Shyam S. Yadav)</td>
+                  <td class="py-2.5 px-4 font-code">1.12 Ha (4.48 Bigha)</td>
+                  <td class="py-2.5 px-4">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-sans font-bold bg-amber-100 text-amber-800 border border-amber-200">64% Moderate</span>
+                  </td>
+                  <td class="py-2.5 px-4 font-sans text-emerald-700 font-medium">Clear Title</td>
+                  <td class="py-2.5 px-4 text-right font-sans">
+                    <button onclick="inspectParcel('09-112-008-41092')" class="text-gov-blue hover:text-blue-800 font-semibold">Inspect</button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-blue-50/40 transition-colors">
+                  <td class="py-2.5 px-4 font-semibold text-gov-blue">29-401-012-77341</td>
+                  <td class="py-2.5 px-4 font-sans">Karnataka • Survey 114/2 (Sarjapur, Bengaluru)</td>
+                  <td class="py-2.5 px-4 font-sans">ವೆಂಕಟೇಶ್ ಮೂರ್ತಿ (Venkatesh Murthy)</td>
+                  <td class="py-2.5 px-4 font-code">0.82 Ha (2.02 Acre)</td>
+                  <td class="py-2.5 px-4">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-sans font-bold bg-red-100 text-red-800 border border-red-200">92% Critical</span>
+                  </td>
+                  <td class="py-2.5 px-4 font-sans text-red-700 font-medium">Sub-Judice (Civil Court)</td>
+                  <td class="py-2.5 px-4 text-right font-sans">
+                    <button onclick="inspectParcel('29-401-012-77341')" class="text-gov-blue hover:text-blue-800 font-semibold">Inspect</button>
+                  </td>
+                </tr>
+                <tr class="hover:bg-blue-50/40 transition-colors">
+                  <td class="py-2.5 px-4 font-semibold text-gov-blue">24-105-003-12890</td>
+                  <td class="py-2.5 px-4 font-sans">Gujarat • Survey 204 (Sanand, Ahmedabad)</td>
+                  <td class="py-2.5 px-4 font-sans">હસમુખભાઈ પટેલ (Hasmukhbhai Patel)</td>
+                  <td class="py-2.5 px-4 font-code">3.60 Ha (14.2 Vigha)</td>
+                  <td class="py-2.5 px-4">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-sans font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">19% Low</span>
+                  </td>
+                  <td class="py-2.5 px-4 font-sans text-emerald-700 font-medium">Protected Agricultural</td>
+                  <td class="py-2.5 px-4 text-right font-sans">
+                    <button onclick="inspectParcel('24-105-003-12890')" class="text-gov-blue hover:text-blue-800 font-semibold">Inspect</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: GIS CADASTRAL MAP VIEW -->
+      <section id="view-gis-map" class="hidden flex-1 flex flex-col space-y-4">
+        <!-- MAP CONTROLS HEADER -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+              <span>National Geospatial ULPIN Cadastral Overlay</span>
+              <span class="text-xs font-normal text-slate-500 font-mono">(PostGIS EPSG:4326 / WGS84)</span>
+            </h2>
+            <p class="text-xs text-slate-500">Interactive polygon visualization of simulated land parcels with AI conversion risk heatmaps</p>
+          </div>
+          <!-- Layer Toggles -->
+          <div class="flex items-center space-x-2 text-xs">
+            <span class="text-slate-500 font-medium">Filter Risk:</span>
+            <button onclick="filterMapMarkers('all')" class="px-2.5 py-1 bg-gov-navy text-white rounded font-medium">All (5)</button>
+            <button onclick="filterMapMarkers('high')" class="px-2.5 py-1 bg-red-100 text-red-800 border border-red-200 rounded font-medium hover:bg-red-200">Critical (>80%)</button>
+            <button onclick="filterMapMarkers('low')" class="px-2.5 py-1 bg-emerald-100 text-emerald-800 border border-emerald-200 rounded font-medium hover:bg-emerald-200">Agricultural Stable</button>
+          </div>
+        </div>
+
+        <!-- MAP CONTAINER & DRAWER WRAPPER -->
+        <div class="relative w-full h-[580px] rounded-xl overflow-hidden border border-slate-300 shadow-inner bg-slate-200">
+          <div id="map" class="w-full h-full z-10"></div>
+
+          <!-- MAP OVERLAY FLOATING CONTROLS -->
+          <div class="absolute top-4 left-4 z-20 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-md border border-slate-200 text-xs max-w-xs space-y-2">
+            <div class="font-bold text-gov-navy flex items-center justify-between">
+              <span>Map Legend & Layers</span>
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            </div>
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+                <span>Critical Urbanization Risk (>75%)</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                <span>Moderate Conversion Risk (50-75%)</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                <span>Stable Agricultural Parcel (<50%)</span>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-200 text-[10px] text-slate-500">
+              Click any parcel or boundary marker to trigger the PostGIS spatial inspector.
+            </div>
+          </div>
+
+          <!-- SLIDE-IN PARCEL INSPECTION DRAWER -->
+          <div id="parcel-drawer" class="absolute top-0 right-0 bottom-0 w-80 sm:w-96 bg-white/95 backdrop-blur-md shadow-2xl border-l border-slate-200 z-30 transform translate-x-full transition-transform duration-300 flex flex-col">
+            <div class="p-4 bg-gov-navy text-white flex justify-between items-center">
+              <div>
+                <span class="text-[10px] tracking-wider uppercase text-emerald-400 font-semibold font-mono">Bhu-Aadhar Parcel Record</span>
+                <h3 id="drawer-ulpin" class="text-sm font-bold font-mono">27-520-004-98124</h3>
+              </div>
+              <button onclick="closeDrawer()" class="text-slate-300 hover:text-white p-1 rounded-full hover:bg-slate-700/50">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto space-y-4 text-xs">
+              <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-slate-500">State & District:</span>
+                  <span id="drawer-state" class="font-semibold text-slate-800">Maharashtra (Pune)</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">Cadastral Survey / Gat:</span>
+                  <span id="drawer-survey" class="font-mono text-slate-800">Gat No. 342</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">Calculated Area:</span>
+                  <span id="drawer-area" class="font-mono font-semibold text-slate-800">2.45 Hectares</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500">Coordinates:</span>
+                  <span id="drawer-coords" class="font-mono text-slate-600 text-[11px]">18.5204° N, 73.8567° E</span>
+                </div>
+              </div>
+
+              <!-- Owner and Bhashini Transliteration -->
+              <div class="border border-slate-200 rounded-lg p-3 space-y-1.5">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Owner Identification (Bhashini Transliterated)</span>
+                <div id="drawer-owner" class="text-sm font-semibold text-slate-800">रामचंद्र तुकाराम पाटील</div>
+                <div id="drawer-owner-en" class="text-xs text-slate-500">Transliterated: Ramchandra Tukaram Patil</div>
+              </div>
+
+              <!-- ML Conversion Risk Profile -->
+              <div class="border border-slate-200 rounded-lg p-3 space-y-3">
+                <div class="flex justify-between items-center">
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">XGBoost Conversion Probability</span>
+                  <span id="drawer-risk-badge" class="px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-red-800">88% Critical</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2">
+                  <div id="drawer-risk-bar" class="bg-red-600 h-2 rounded-full" style="width: 88%"></div>
+                </div>
+                <div class="text-[11px] text-slate-600 space-y-1">
+                  <div class="flex justify-between">
+                    <span>Distance to NH-48 Expressway:</span>
+                    <span id="drawer-hw" class="font-mono font-medium">0.8 km</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Mutation Velocity (5 Yrs):</span>
+                    <span id="drawer-mutation" class="font-mono font-medium">4 Transfers</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>Irrigation Access:</span>
+                    <span id="drawer-water" class="font-mono font-medium">Medium canal</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Policy Recommendation -->
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] text-blue-900">
+                <span class="font-bold">Policy Advisory:</span>
+                <p id="drawer-policy" class="mt-1 leading-relaxed">
+                  High probability of illegal sub-plotting. Recommend immediate verification under Section 63 of Maharashtra Tenancy Act before sanctioning NA permission.
+                </p>
+              </div>
+            </div>
+            <div class="p-3 border-t border-slate-200 bg-slate-50 flex space-x-2">
+              <button onclick="simulatePolicyIntervention()" class="flex-1 bg-gov-blue text-white py-2 rounded-lg text-xs font-semibold hover:bg-blue-800 transition">
+                Simulate Intervention
+              </button>
+              <button onclick="copyUlpin()" class="px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100">
+                Copy ULPIN
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: ML PREDICTION & SIMULATION WIDGET -->
+      <section id="view-ml-predictor" class="hidden space-y-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">XGBoost Agricultural-to-Urban Conversion Predictor</h2>
+              <p class="text-xs text-slate-500">Estimates the 3-year probability of agricultural parcel fragmentation and commercial conversion</p>
+            </div>
+            <span class="px-2.5 py-1 text-xs font-mono font-semibold bg-purple-50 text-purple-700 rounded-md border border-purple-200">Model: XGBoost v2.1 (AUC 0.941)</span>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Parameter Inputs Form (Left 7 cols) -->
+            <div class="lg:col-span-7 space-y-5">
+              <!-- Preset Selector -->
+              <div class="flex items-center space-x-2 pb-3 border-b border-slate-100">
+                <span class="text-xs font-medium text-slate-600">Load Simulation Archetype:</span>
+                <button onclick="loadArchetype('peri-urban')" class="px-2.5 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200 font-medium text-slate-700">Peri-Urban Highway</button>
+                <button onclick="loadArchetype('deep-rural')" class="px-2.5 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200 font-medium text-slate-700">Protected Agrarian</button>
+                <button onclick="loadArchetype('metro-fringe')" class="px-2.5 py-1 text-xs rounded bg-slate-100 hover:bg-slate-200 font-medium text-slate-700">Metro Tech Fringe</button>
+              </div>
+
+              <!-- Input 1: Land Area -->
+              <div>
+                <div class="flex justify-between items-center text-xs mb-1">
+                  <label for="param-area" class="font-medium text-slate-700">Parcel Area (Standardized Hectares)</label>
+                  <span id="val-area" class="font-mono font-bold text-gov-blue">2.5 Ha</span>
+                </div>
+                <input id="param-area" type="range" min="0.2" max="25" step="0.1" value="2.5" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="updatePrediction()">
+                <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                  <span>Smallholding (0.2 Ha)</span>
+                  <span>Estate / Zamindari (25 Ha)</span>
+                </div>
+              </div>
+
+              <!-- Input 2: Distance to National Highway / Major Corridor -->
+              <div>
+                <div class="flex justify-between items-center text-xs mb-1">
+                  <label for="param-highway" class="font-medium text-slate-700">Distance to Nearest National Highway / Expressway (km)</label>
+                  <span id="val-highway" class="font-mono font-bold text-gov-blue">1.2 km</span>
+                </div>
+                <input id="param-highway" type="range" min="0.1" max="40" step="0.5" value="1.2" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="updatePrediction()">
+                <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                  <span>Adjacent (< 0.5 km)</span>
+                  <span>Remote Interior (40 km)</span>
+                </div>
+              </div>
+
+              <!-- Input 3: Mutation Frequency (Sales / Title Transfers in 5 yrs) -->
+              <div>
+                <div class="flex justify-between items-center text-xs mb-1">
+                  <label for="param-mutation" class="font-medium text-slate-700">Ownership Mutations / Title Transfers (Past 5 Years)</label>
+                  <span id="val-mutation" class="font-mono font-bold text-gov-blue">3 Transfers</span>
+                </div>
+                <input id="param-mutation" type="range" min="0" max="10" step="1" value="3" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="updatePrediction()">
+                <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                  <span>0 (Ancestral / Stable)</span>
+                  <span>10 (High Speculative Activity)</span>
+                </div>
+              </div>
+
+              <!-- Input 4: Distance to Municipal / Urban Expansion Fringe -->
+              <div>
+                <div class="flex justify-between items-center text-xs mb-1">
+                  <label for="param-urban-dist" class="font-medium text-slate-700">Proximity to Urban Planning Authority Fringe (km)</label>
+                  <span id="val-urban-dist" class="font-mono font-bold text-gov-blue">4.5 km</span>
+                </div>
+                <input id="param-urban-dist" type="range" min="0.5" max="50" step="0.5" value="4.5" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="updatePrediction()">
+              </div>
+
+              <!-- Input 5: Irrigation / Soil Fertility Index -->
+              <div>
+                <div class="flex justify-between items-center text-xs mb-1">
+                  <label for="param-irrigation" class="font-medium text-slate-700">Irrigation & Soil Productivity Index (0-100)</label>
+                  <span id="val-irrigation" class="font-mono font-bold text-gov-blue">35 (Rain-fed / Marginal)</span>
+                </div>
+                <input id="param-irrigation" type="range" min="0" max="100" step="5" value="35" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" oninput="updatePrediction()">
+                <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                  <span>0 (Arid / Barren)</span>
+                  <span>100 (Perennial Canal / High Yield)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Prediction Output Card (Right 5 cols) -->
+            <div class="lg:col-span-5 bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-center pb-3 border-b border-slate-200">
+                  <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Simulated Inference</span>
+                  <span class="px-2 py-0.5 text-[10px] font-mono bg-emerald-100 text-emerald-800 rounded font-semibold">Redis Cache TTL: 300s</span>
+                </div>
+
+                <!-- Big Risk Meter -->
+                <div class="my-6 text-center">
+                  <div class="text-[11px] text-slate-500 uppercase font-semibold">Urban Land Conversion Risk</div>
+                  <div id="ml-score-display" class="text-5xl font-black text-gov-crimson font-code my-2">78.4%</div>
+                  <div id="ml-risk-category" class="inline-block px-3 py-1 text-xs font-bold rounded-full bg-red-100 text-red-800 border border-red-300">
+                    High Conversion Probability
+                  </div>
+                </div>
+
+                <!-- SHAP Feature Attribution Breakdown -->
+                <div class="space-y-2 pt-2 border-t border-slate-200">
+                  <span class="text-xs font-semibold text-slate-700">Key Feature Contributions (SHAP Values):</span>
+                  
+                  <div class="space-y-1.5 text-[11px]">
+                    <div>
+                      <div class="flex justify-between text-slate-600">
+                        <span>Distance to Highway (< 2km)</span>
+                        <span id="shap-highway" class="font-mono text-red-600 font-bold">+38%</span>
+                      </div>
+                      <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                        <div id="bar-shap-highway" class="bg-red-500 h-full" style="width: 75%"></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div class="flex justify-between text-slate-600">
+                        <span>High Title Mutation Velocity</span>
+                        <span id="shap-mutation" class="font-mono text-red-600 font-bold">+24%</span>
+                      </div>
+                      <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                        <div id="bar-shap-mutation" class="bg-red-500 h-full" style="width: 55%"></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div class="flex justify-between text-slate-600">
+                        <span>Low Irrigation Deficit</span>
+                        <span id="shap-irrigation" class="font-mono text-amber-600 font-bold">+16%</span>
+                      </div>
+                      <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                        <div id="bar-shap-irrigation" class="bg-amber-500 h-full" style="width: 35%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recommendation Box -->
+              <div class="mt-4 p-3 bg-white rounded-lg border border-slate-200 text-xs">
+                <span class="font-bold text-slate-800">Policy Recommendation:</span>
+                <p id="ml-recommendation" class="text-slate-600 mt-1 leading-relaxed">
+                  Trigger pre-emptive Master Plan zoning audit. High risk of uncontrolled agrarian fragmentation.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: AIRFLOW PIPELINE & BHASHINI STATUS -->
+      <section id="view-pipeline" class="hidden space-y-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex justify-between items-center pb-3 border-b border-slate-200">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Apache Airflow ETL DAG: <span class="font-mono text-gov-blue">nightly_land_record_sync</span></h2>
+              <p class="text-xs text-slate-500">Orchestrates automated state API extraction, Bhashini translation, unit normalization, and PostGIS indexing</p>
+            </div>
+            <span class="px-2.5 py-1 text-xs font-mono bg-emerald-100 text-emerald-800 rounded-md font-semibold">Schedule: @daily (02:00 IST)</span>
+          </div>
+
+          <!-- DAG Tasks Progress Pipeline Visualizer -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 py-2">
+            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div class="flex items-center space-x-2 text-emerald-800 font-bold text-xs mb-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>1. extract_state_apis</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Pulls raw JSON/XML from Mahabhulekh, UP Bhulekh, Bhoomi via API Setu.</p>
+              <div class="mt-2 text-[10px] font-mono text-emerald-700">Status: SUCCESS (4.2s)</div>
+            </div>
+
+            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div class="flex items-center space-x-2 text-emerald-800 font-bold text-xs mb-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>2. bhashini_transliterate</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Translates regional owner names & tenure classifications into Hindi/English.</p>
+              <div class="mt-2 text-[10px] font-mono text-emerald-700">Status: SUCCESS (12.8s)</div>
+            </div>
+
+            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div class="flex items-center space-x-2 text-emerald-800 font-bold text-xs mb-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>3. standardize_ulpin_schema</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Normalizes Gunta/Bigha to Hectares; calculates 14-digit ULPIN geometry hash.</p>
+              <div class="mt-2 text-[10px] font-mono text-emerald-700">Status: SUCCESS (8.1s)</div>
+            </div>
+
+            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+              <div class="flex items-center space-x-2 text-emerald-800 font-bold text-xs mb-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>4. load_postgis_elastic</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Upserts spatial polygons to PostGIS & indexes text attributes into Elasticsearch.</p>
+              <div class="mt-2 text-[10px] font-mono text-emerald-700">Status: SUCCESS (15.4s)</div>
+            </div>
+          </div>
+
+          <!-- Airflow Log Terminal Preview -->
+          <div class="bg-slate-900 text-slate-200 rounded-lg p-4 font-mono text-xs overflow-x-auto border border-slate-800">
+            <div class="text-slate-400 mb-2">// Airflow Worker Log Snapshot: dag_id=nightly_land_record_sync, run_id=manual__2026-10-03</div>
+            <div class="text-emerald-400">[2026-10-03 02:00:01] INFO - Starting task: extract_state_apis for 28 States</div>
+            <div class="text-slate-300">[2026-10-03 02:00:04] INFO - Fetched 45,210 mutated land records via API Setu token.</div>
+            <div class="text-blue-300">[2026-10-03 02:00:06] INFO - Bhashini Pipeline: Transliterating Marathi (Mr) & Hindi (Hi) strings...</div>
+            <div class="text-slate-300">[2026-10-03 02:00:19] INFO - Normalized 42,100 areas to standard SI Hectares (1 Gunta = 0.010117 Ha).</div>
+            <div class="text-purple-300">[2026-10-03 02:00:27] INFO - Generated 42,100 14-digit ULPIN keys from centroid polygon coordinates.</div>
+            <div class="text-emerald-400">[2026-10-03 02:00:43] INFO - Bulk indexed into Elasticsearch index 'land_records_v2' (0 errors).</div>
+            <div class="text-emerald-400 font-bold">[2026-10-03 02:00:44] INFO - DAG run completed successfully. Next execution in 23 hours.</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+  </div><!-- end #main-app -->
+
+  <!-- OLD MODAL REMOVED - login is now a full-page flow -->
+  <div id="login-modal-unused" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full overflow-hidden flex flex-col md:flex-row relative animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- Close Button -->
+      <button onclick="closeLoginModal()" class="absolute top-4 right-4 z-20 text-slate-400 hover:text-slate-700 bg-white/80 p-1.5 rounded-full hover:bg-slate-100 transition focus:outline-none">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+
+      <!-- LEFT SIDE: LOGIN FORM & RBAC -->
+      <div class="w-full md:w-1/2 p-6 sm:p-8 flex flex-col justify-between">
+        <div>
+          <!-- Header Badge -->
+          <div class="flex items-center space-x-2 mb-4">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span class="text-[11px] font-bold text-gov-navy uppercase tracking-wider">DoLR Central Authentication</span>
+          </div>
+
+          <h3 class="text-xl font-black text-gov-navy tracking-tight">Sign in to NLGP Portal</h3>
+          <p class="text-xs text-slate-500 mt-1 mb-5">
+            Role-Based Access Control (RBAC) protected land governance gateway.
+          </p>
+
+          <form id="modal-login-form" onsubmit="handleModalLogin(event)" novalidate class="space-y-3.5">
+            
+            <!-- RBAC Role Dropdown -->
+            <div>
+              <label for="modal-role-select" class="block text-xs font-semibold text-slate-700 mb-1">
+                Access Authorization Role <span class="text-red-500">*</span>
+              </label>
+              <select id="modal-role-select" class="w-full py-2 px-3 text-xs border border-slate-300 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer" onchange="updateRolePlaceholder(this.value)">
+                <option value="Official">Government Official (Revenue / Cadastre)</option>
+                <option value="Researcher">Research Scholar / Policy Analyst</option>
+                <option value="Citizen">Citizen / Land Owner (Bhu-Aadhar)</option>
+              </select>
+            </div>
+
+            <!-- Email / ULPIN Input -->
+            <div>
+              <label for="modal-user-input" class="block text-xs font-semibold text-slate-700 mb-1">
+                <span id="modal-input-label">Official Email or Employee ID</span> <span class="text-red-500">*</span>
+              </label>
+              <input 
+                id="modal-user-input" 
+                type="text" 
+                placeholder="rajesh.varma@nic.in"
+                class="w-full py-2 px-3 text-xs border border-slate-300 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none transition"
+              >
+              <p id="modal-user-error" class="hidden text-[10px] text-red-600 mt-1 font-medium">Please enter your credentials to continue.</p>
+            </div>
+
+            <!-- Password Field with Show/Hide Toggle -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label for="modal-password-input" class="block text-xs font-semibold text-slate-700">
+                  Password / Passkey <span class="text-red-500">*</span>
+                </label>
+                <a href="#" onclick="alert('Password reset link routed to registered mobile/email.'); return false;" class="text-[10px] text-gov-blue hover:underline">Forgot?</a>
+              </div>
+              <div class="relative">
+                <input 
+                  id="modal-password-input" 
+                  type="password" 
+                  placeholder="••••••••••••"
+                  class="w-full py-2 pl-3 pr-9 text-xs border border-slate-300 rounded-lg bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none transition"
+                >
+                <button type="button" onclick="toggleModalPassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                  <svg id="eye-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </button>
+              </div>
+              <p id="modal-password-error" class="hidden text-[10px] text-red-600 mt-1 font-medium">Password is required (min 6 characters).</p>
+            </div>
+
+            <!-- Remember Me -->
+            <div class="flex items-center justify-between pt-0.5">
+              <label class="flex items-center space-x-2 text-xs text-slate-600 cursor-pointer">
+                <input type="checkbox" checked class="w-3.5 h-3.5 text-blue-600 rounded border-slate-300">
+                <span class="text-[11px]">Remember this device</span>
+              </label>
+              <span class="text-[10px] text-slate-400 font-mono">TLS 1.3 Active</span>
+            </div>
+
+            <!-- Submit Button -->
+            <button id="modal-submit-btn" type="submit" class="w-full mt-2 bg-gov-navy hover:bg-gov-blue text-white py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
+              <span>Sign In to Terminal</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+          </form>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-100 flex justify-between text-[10px] text-slate-400">
+          <span>NIC Cloud Authentication</span>
+          <span>DPDP Act 2023 Compliant</span>
+        </div>
+      </div>
+
+      <!-- RIGHT SIDE: HIGH-TECH GEOMETRIC DIGITAL MAP & METRICS -->
+      <div class="hidden md:flex w-1/2 bg-gov-navy text-white p-8 flex-col justify-between relative overflow-hidden">
+        
+        <!-- Background Grid Pattern -->
+        <div class="absolute inset-0 opacity-15 pointer-events-none">
+          <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid-pattern" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#38bdf8" stroke-width="0.8" />
+                <circle cx="30" cy="0" r="1.5" fill="#34d399" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid-pattern)" />
+          </svg>
+        </div>
+
+        <div class="relative z-10 flex justify-between items-center">
+          <span class="text-[10px] font-mono bg-slate-800/80 px-2 py-0.5 rounded text-emerald-300 border border-slate-700">GeoNode Active</span>
+          <span class="text-[10px] font-mono text-slate-400">EPSG:4326</span>
+        </div>
+
+        <div class="relative z-10 my-auto text-center py-6">
+          <!-- Abstract Glowing Geometric Map Vector -->
+          <div class="w-36 h-36 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-blue-900 to-emerald-950 p-3 border border-emerald-500/40 shadow-xl flex items-center justify-center relative">
+            <svg class="w-24 h-24 text-emerald-400" viewBox="0 0 100 100" fill="none">
+              <polygon points="50,15 85,35 70,80 30,85 15,45" stroke="#10b981" stroke-width="1.8" fill="rgba(16, 185, 129, 0.15)" />
+              <polygon points="50,15 50,55 70,80" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3 2" />
+              <polygon points="15,45 50,55 30,85" stroke="#38bdf8" stroke-width="1.2" stroke-dasharray="3 2" />
+              <circle cx="50" cy="55" r="4" fill="#38bdf8" />
+              <circle cx="85" cy="35" r="3" fill="#10b981" />
+              <circle cx="30" cy="85" r="3" fill="#fbbf24" />
+            </svg>
+            <div class="absolute -bottom-2 bg-slate-900 px-2 py-0.5 rounded text-[9px] font-mono text-blue-300 border border-slate-700">
+              ULPIN 27-520-004
+            </div>
+          </div>
+
+          <h4 class="text-base font-bold text-white tracking-tight">National Spatial Cadastre Hub</h4>
+          <p class="text-[11px] text-slate-300 mt-1 max-w-xs mx-auto leading-relaxed">
+            Consolidating 34.8+ Cr land parcels with real-time PostGIS coordinates and Bhashini AI transliteration.
+          </p>
+        </div>
+
+        <div class="relative z-10 text-[10px] text-slate-400 flex justify-between border-t border-slate-800 pt-3">
+          <span>DoLR • MoRD India</span>
+          <span class="font-mono">v2.0-Prod</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-gov-navy text-slate-300 text-xs py-4 border-t border-slate-800 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div class="flex items-center space-x-2">
+        <span class="font-bold text-white">NLGP</span>
+        <span>• National Land Governance Platform Prototype</span>
+      </div>
+      <div class="text-slate-400">
+        Designed for Research & Policy Innovation • Built with Leaflet, Tailwind & FastAPI Architecture
+      </div>
+    </div>
+  </footer>
+
+  <!-- SCRIPT LOGIC: LEAFLET MAP, CHARTS, SEARCH, ML SIMULATOR -->
+  <script>
+    // --- 1. MOCK DATA STORE ---
+    const PARCELS_DATA = [
+      {
+        ulpin: "27-520-004-98124",
+        state: "Maharashtra (Pune)",
+        survey: "Gat No. 342, Haveli Taluka",
+        ownerNative: "रामचंद्र तुकाराम पाटील",
+        ownerEn: "Ramchandra Tukaram Patil",
+        areaHa: 2.45,
+        areaLocal: "6.05 Acre (242 Guntha)",
+        lat: 18.5204,
+        lng: 73.8567,
+        riskScore: 88,
+        riskCategory: "Critical",
+        highwayDist: "0.8 km (NH-48)",
+        mutationCount: 4,
+        irrigation: "Medium Canal / Well",
+        policyAdvisory: "High risk of unauthorized peri-urban plotting along the Hinjewadi-Pune tech corridor. Restrict agricultural conversion permit pending Master Plan review."
+      },
+      {
+        ulpin: "09-112-008-41092",
+        state: "Uttar Pradesh (Varanasi)",
+        survey: "Khasra 819, Pindra Tehsil",
+        ownerNative: "श्याम सुंदर यादव",
+        ownerEn: "Shyam Sundar Yadav",
+        areaHa: 1.12,
+        areaLocal: "4.48 Bigha",
+        lat: 25.3176,
+        lng: 82.9739,
+        riskScore: 64,
+        riskCategory: "Moderate",
+        highwayDist: "2.1 km (NH-19 Ring Road)",
+        mutationCount: 2,
+        irrigation: "Tube-well irrigated",
+        policyAdvisory: "Moderate conversion pressure driven by Varanasi ring road expansion. Recommend green belt buffer zoning."
+      },
+      {
+        ulpin: "29-401-012-77341",
+        state: "Karnataka (Bengaluru Urban)",
+        survey: "Survey 114/2, Sarjapur Hobli",
+        ownerNative: "ವೆಂಕಟೇಶ್ ಮೂರ್ತಿ",
+        ownerEn: "Venkatesh Murthy",
+        areaHa: 0.82,
+        areaLocal: "2.02 Acre (81 Gunta)",
+        lat: 12.8596,
+        lng: 77.7871,
+        riskScore: 92,
+        riskCategory: "Critical",
+        highwayDist: "0.4 km (Outer Ring Road link)",
+        mutationCount: 5,
+        irrigation: "None (Depleted aquifer)",
+        policyAdvisory: "Imminent commercial layout subdivision. High litigation history detected in Karnataka Bhoomi repository."
+      },
+      {
+        ulpin: "24-105-003-12890",
+        state: "Gujarat (Ahmedabad Rural)",
+        survey: "Survey 204, Sanand Taluka",
+        ownerNative: "હસમુખભાઈ પટેલ",
+        ownerEn: "Hasmukhbhai Patel",
+        areaHa: 3.60,
+        areaLocal: "14.2 Vigha",
+        lat: 22.9868,
+        lng: 72.3812,
+        riskScore: 19,
+        riskCategory: "Low",
+        highwayDist: "14.5 km",
+        mutationCount: 0,
+        irrigation: "Narmada Canal Perennial",
+        policyAdvisory: "Highly productive multi-crop agrarian buffer. Recommended for strict preservation under Agricultural Protection Zone rules."
+      },
+      {
+        ulpin: "08-302-005-55112",
+        state: "Rajasthan (Jaipur Rural)",
+        survey: "Khasra 412, Sanganer",
+        ownerNative: "कैलाश चंद्र शर्मा",
+        ownerEn: "Kailash Chandra Sharma",
+        areaHa: 1.95,
+        areaLocal: "7.8 Bigha",
+        lat: 26.8123,
+        lng: 75.8012,
+        riskScore: 71,
+        riskCategory: "Moderate",
+        highwayDist: "1.9 km (Jaipur-Ajmer Expressway)",
+        mutationCount: 3,
+        irrigation: "Rain-fed / Dryland",
+        policyAdvisory: "Conversion application pending for warehouse logistics park. Check water table recharge compliance."
+      }
+    ];
+
+    // --- 2. LIVE CLOCK ---
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('live-clock').textContent = now.toLocaleTimeString('en-IN', { hour12: false });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // --- 3. VIEW SWITCHER ---
+    let mapInitialized = false;
+    let leafletMap = null;
+    let markersLayer = null;
+
+    function switchView(viewName) {
+      const views = ['dashboard', 'gis-map', 'ml-predictor', 'pipeline'];
+      views.forEach(v => {
+        const el = document.getElementById('view-' + v);
+        const nav = document.getElementById('nav-' + v);
+        if (v === viewName) {
+          el.classList.remove('hidden');
+          nav.classList.add('bg-blue-50', 'text-gov-blue', 'border', 'border-blue-200');
+          nav.classList.remove('text-slate-600', 'hover:bg-slate-50');
+        } else {
+          el.classList.add('hidden');
+          nav.classList.remove('bg-blue-50', 'text-gov-blue', 'border', 'border-blue-200');
+          nav.classList.add('text-slate-600', 'hover:bg-slate-50');
+        }
+      });
+
+      if (viewName === 'gis-map') {
+        setTimeout(() => {
+          if (!mapInitialized) {
+            initLeafletMap();
+          } else {
+            leafletMap.invalidateSize();
+          }
+        }, 100);
+      }
+    }
+
+    // --- 4. LEAFLET GIS MAP INITIALIZATION ---
+    function initLeafletMap() {
+      mapInitialized = true;
+      // Center roughly around Central India
+      leafletMap = L.map('map', {
+        center: [21.8, 78.9],
+        zoom: 5,
+        minZoom: 4,
+        maxZoom: 17
+      });
+
+      // CartoDB Positron base tile layer (clean, high-contrast, government dashboard aesthetic)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(leafletMap);
+
+      markersLayer = L.layerGroup().addTo(leafletMap);
+      renderParcelsOnMap(PARCELS_DATA);
+    }
+
+    function getRiskColor(score) {
+      if (score >= 75) return '#dc2626'; // Red
+      if (score >= 50) return '#d97706'; // Amber
+      return '#059669'; // Emerald
+    }
+
+    function renderParcelsOnMap(parcels) {
+      markersLayer.clearLayers();
+
+      parcels.forEach(p => {
+        const color = getRiskColor(p.riskScore);
+        
+        // Circular parcel marker with pulse effect for critical items
+        const isCritical = p.riskScore >= 75;
+        const marker = L.circleMarker([p.lat, p.lng], {
+          radius: isCritical ? 10 : 8,
+          fillColor: color,
+          color: '#ffffff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.85,
+          className: isCritical ? 'pulse-marker' : ''
+        });
+
+        // Popup with ULPIN and Quick Details
+        const popupContent = `
+          <div class="font-sans text-xs p-1">
+            <div class="font-bold text-slate-800 text-[11px] mb-1 font-mono">${p.ulpin}</div>
+            <div class="text-slate-600">${p.state}</div>
+            <div class="text-slate-600 font-semibold mt-1">Area: ${p.areaHa} Ha</div>
+            <div class="mt-1">
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold text-white" style="background-color: ${color}">
+                Risk: ${p.riskScore}% (${p.riskCategory})
+              </span>
+            </div>
+            <button onclick="inspectParcel('${p.ulpin}')" class="mt-2 w-full bg-blue-600 text-white py-1 rounded text-[10px] font-bold hover:bg-blue-700">
+              Open Spatial Inspector
+            </button>
+          </div>
+        `;
+        marker.bindPopup(popupContent);
+        marker.on('click', () => {
+          inspectParcel(p.ulpin);
+        });
+
+        markersLayer.addLayer(marker);
+
+        // Also add a sample cadastral polygon footprint around parcel
+        const delta = 0.008;
+        const polygon = L.polygon([
+          [p.lat - delta, p.lng - delta],
+          [p.lat + delta, p.lng - delta],
+          [p.lat + delta*1.2, p.lng + delta],
+          [p.lat - delta, p.lng + delta]
+        ], {
+          color: color,
+          weight: 1.5,
+          fillColor: color,
+          fillOpacity: 0.15,
+          dashArray: '3, 4'
+        });
+        polygon.on('click', () => inspectParcel(p.ulpin));
+        markersLayer.addLayer(polygon);
+      });
+    }
+
+    function filterMapMarkers(type) {
+      if (!markersLayer) return;
+      if (type === 'all') {
+        renderParcelsOnMap(PARCELS_DATA);
+      } else if (type === 'high') {
+        renderParcelsOnMap(PARCELS_DATA.filter(p => p.riskScore >= 75));
+      } else if (type === 'low') {
+        renderParcelsOnMap(PARCELS_DATA.filter(p => p.riskScore < 50));
+      }
+    }
+
+    // --- 5. PARCEL INSPECTOR DRAWER ---
+    function inspectParcel(ulpin) {
+      const parcel = PARCELS_DATA.find(p => p.ulpin === ulpin);
+      if (!parcel) return;
+
+      // Switch view to GIS map if not currently on it
+      switchView('gis-map');
+
+      // Populate Drawer
+      document.getElementById('drawer-ulpin').textContent = parcel.ulpin;
+      document.getElementById('drawer-state').textContent = parcel.state;
+      document.getElementById('drawer-survey').textContent = parcel.survey;
+      document.getElementById('drawer-area').textContent = `${parcel.areaHa} Ha (${parcel.areaLocal})`;
+      document.getElementById('drawer-coords').textContent = `${parcel.lat.toFixed(4)}° N, ${parcel.lng.toFixed(4)}° E`;
+      document.getElementById('drawer-owner').textContent = parcel.ownerNative;
+      document.getElementById('drawer-owner-en').textContent = `Transliterated: ${parcel.ownerEn}`;
+      
+      const riskBadge = document.getElementById('drawer-risk-badge');
+      const riskBar = document.getElementById('drawer-risk-bar');
+      riskBadge.textContent = `${parcel.riskScore}% ${parcel.riskCategory}`;
+      riskBar.style.width = `${parcel.riskScore}%`;
+
+      if (parcel.riskScore >= 75) {
+        riskBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-red-800 border border-red-300';
+        riskBar.className = 'bg-red-600 h-2 rounded-full';
+      } else if (parcel.riskScore >= 50) {
+        riskBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300';
+        riskBar.className = 'bg-amber-600 h-2 rounded-full';
+      } else {
+        riskBadge.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
+        riskBar.className = 'bg-emerald-600 h-2 rounded-full';
+      }
+
+      document.getElementById('drawer-hw').textContent = parcel.highwayDist;
+      document.getElementById('drawer-mutation').textContent = `${parcel.mutationCount} Transfers`;
+      document.getElementById('drawer-water').textContent = parcel.irrigation;
+      document.getElementById('drawer-policy').textContent = parcel.policyAdvisory;
+
+      // Open drawer
+      const drawer = document.getElementById('parcel-drawer');
+      drawer.classList.remove('translate-x-full');
+
+      // Pan map smoothly to coordinates
+      if (leafletMap) {
+        leafletMap.flyTo([parcel.lat, parcel.lng], 13, { duration: 1.2 });
+      }
+    }
+
+    function closeDrawer() {
+      const drawer = document.getElementById('parcel-drawer');
+      drawer.classList.add('translate-x-full');
+    }
+
+    function copyUlpin() {
+      const text = document.getElementById('drawer-ulpin').textContent;
+      navigator.clipboard.writeText(text);
+      alert(`ULPIN ${text} copied to clipboard for PostGIS / Land Registry query.`);
+    }
+
+    function simulatePolicyIntervention() {
+      alert("Policy Simulation Triggered:\nApplied temporary moratorium on Non-Agricultural (NA) diversion under Section 63.\nProjected risk reduction: -34% within 12 months.");
+    }
+
+    // --- 6. GLOBAL AI / ELASTICSEARCH RAG SEARCH ---
+    function handleSearch(query) {
+      const dropdown = document.getElementById('search-results-dropdown');
+      const list = document.getElementById('search-results-list');
+      
+      if (!query || query.trim().length < 2) {
+        dropdown.classList.add('hidden');
+        return;
+      }
+
+      const q = query.toLowerCase();
+      // Filter mock parcels & research documents
+      const matches = PARCELS_DATA.filter(p => 
+        p.ulpin.toLowerCase().includes(q) ||
+        p.state.toLowerCase().includes(q) ||
+        p.ownerEn.toLowerCase().includes(q) ||
+        p.ownerNative.includes(q) ||
+        p.survey.toLowerCase().includes(q)
+      );
+
+      // Add a simulated research document match if search contains "dispute", "policy", or "pune"
+      const docMatches = [];
+      if (q.includes('dispute') || q.includes('policy') || q.includes('pune') || q.includes('court')) {
+        docMatches.push({
+          title: "Supreme Court Precedent: Tenancy Rights & Agricultural Land Diversion in Maharashtra",
+          type: "RAG Policy Document",
+          citation: "Civil Appeal No. 4912/2023 • NITI Aayog Policy Working Paper",
+          ulpinRef: "27-520-004-98124"
+        });
+      }
+
+      list.innerHTML = '';
+
+      if (matches.length === 0 && docMatches.length === 0) {
+        list.innerHTML = `
+          <div class="p-4 text-center text-xs text-slate-500">
+            No exact index matches found for "<span class="font-mono text-slate-700">${query}</span>".
+            <div class="mt-1 text-[11px] text-slate-400">Try searching "Pune", "Varanasi", "27-520", or "Patil"</div>
+          </div>
+        `;
+      } else {
+        // Render Land Record matches
+        matches.forEach(m => {
+          const item = document.createElement('div');
+          item.className = "p-3 hover:bg-blue-50 cursor-pointer flex justify-between items-center transition";
+          item.onclick = () => {
+            dropdown.classList.add('hidden');
+            inspectParcel(m.ulpin);
+          };
+          item.innerHTML = `
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="font-mono font-bold text-gov-blue text-xs">${m.ulpin}</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 font-semibold text-slate-600">${m.state}</span>
+              </div>
+              <div class="text-xs text-slate-600 mt-0.5">${m.survey} • Owner: ${m.ownerEn} (${m.ownerNative})</div>
+            </div>
+            <div class="text-right">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.riskScore >= 75 ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}">
+                Risk ${m.riskScore}%
+              </span>
+            </div>
+          `;
+          list.appendChild(item);
+        });
+
+        // Render RAG Document matches
+        docMatches.forEach(doc => {
+          const item = document.createElement('div');
+          item.className = "p-3 bg-purple-50/50 hover:bg-purple-100/70 cursor-pointer flex justify-between items-center transition border-t border-purple-100";
+          item.onclick = () => {
+            dropdown.classList.add('hidden');
+            inspectParcel(doc.ulpinRef);
+          };
+          item.innerHTML = `
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-purple-700 bg-purple-100 px-1.5 py-0.2 rounded">RAG Doc</span>
+                <span class="font-semibold text-slate-900 text-xs">${doc.title}</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-0.5">${doc.citation}</div>
+            </div>
+            <span class="text-[11px] font-semibold text-purple-700">Open Context →</span>
+          `;
+          list.appendChild(item);
+        });
+      }
+
+      dropdown.classList.remove('hidden');
+    }
+
+    // Close search dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const searchBox = document.getElementById('global-search-input');
+      const dropdown = document.getElementById('search-results-dropdown');
+      if (!searchBox.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    // --- 7. ML PREDICTOR FORMULA SIMULATION (Simulating XGBoost Weights) ---
+    function updatePrediction() {
+      const area = parseFloat(document.getElementById('param-area').value);
+      const highway = parseFloat(document.getElementById('param-highway').value);
+      const mutation = parseInt(document.getElementById('param-mutation').value);
+      const urbanDist = parseFloat(document.getElementById('param-urban-dist').value);
+      const irrigation = parseInt(document.getElementById('param-irrigation').value);
+
+      // Update labels
+      document.getElementById('val-area').textContent = `${area.toFixed(1)} Ha`;
+      document.getElementById('val-highway').textContent = `${highway.toFixed(1)} km`;
+      document.getElementById('val-mutation').textContent = `${mutation} Transfers`;
+      document.getElementById('val-urban-dist').textContent = `${urbanDist.toFixed(1)} km`;
+      document.getElementById('val-irrigation').textContent = `${irrigation}/100`;
+
+      // Simplified linear proxy model mimicking an XGBoost inference pipeline:
+      // Base probability
+      let logit = -0.5;
+      
+      // Feature weights derived from real urbanization risk models:
+      // Highway proximity: closer = much higher risk
+      const highwayFactor = Math.max(0, (15 - highway) / 15) * 2.8; 
+      // Mutation frequency: higher transfers = speculative trading
+      const mutationFactor = (mutation / 10) * 2.4;
+      // Urban perimeter proximity
+      const urbanFactor = Math.max(0, (20 - urbanDist) / 20) * 1.8;
+      // Irrigation: high productivity decreases likelihood of sale
+      const irrigationPenalty = (irrigation / 100) * 2.2;
+      // Parcel size factor: smaller fragments are easier to convert
+      const sizePenalty = (area > 8 ? -0.8 : 0.6);
+
+      logit += (highwayFactor + mutationFactor + urbanFactor - irrigationPenalty + sizePenalty);
+
+      // Sigmoid function
+      const prob = 1 / (1 + Math.exp(-logit));
+      const score = Math.min(99, Math.max(1, Math.round(prob * 1000) / 10));
+
+      // Update UI elements
+      const scoreDisplay = document.getElementById('ml-score-display');
+      const catDisplay = document.getElementById('ml-risk-category');
+      scoreDisplay.textContent = `${score.toFixed(1)}%`;
+
+      if (score >= 75) {
+        scoreDisplay.className = "text-5xl font-black text-gov-crimson font-code my-2";
+        catDisplay.className = "inline-block px-3 py-1 text-xs font-bold rounded-full bg-red-100 text-red-800 border border-red-300";
+        catDisplay.textContent = "High Conversion Probability";
+        document.getElementById('ml-recommendation').textContent = 
+          "Trigger pre-emptive Master Plan zoning audit. High likelihood of agrarian fragmentation into unauthorized plots within 24 months.";
+      } else if (score >= 45) {
+        scoreDisplay.className = "text-5xl font-black text-gov-amber font-code my-2";
+        catDisplay.className = "inline-block px-3 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-300";
+        catDisplay.textContent = "Moderate Conversion Pressure";
+        document.getElementById('ml-recommendation').textContent = 
+          "Monitor annual satellite NDVI vegetation index. Recommend land consolidation incentives to retain farming viability.";
+      } else {
+        scoreDisplay.className = "text-5xl font-black text-gov-emerald font-code my-2";
+        catDisplay.className = "inline-block px-3 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300";
+        catDisplay.textContent = "Stable Agricultural Baseline";
+        document.getElementById('ml-recommendation').textContent = 
+          "Parcel maintains high agrarian resilience. No commercial encroachment detected. Qualifies for PM-Kisan crop insurance prioritization.";
+      }
+
+      // Update SHAP proxy bars
+      const hwContrib = Math.round(Math.min(50, highwayFactor * 14));
+      const mutContrib = Math.round(Math.min(40, mutationFactor * 13));
+      const irrContrib = Math.round(Math.min(30, (100 - irrigation) * 0.25));
+
+      document.getElementById('shap-highway').textContent = `+${hwContrib}%`;
+      document.getElementById('bar-shap-highway').style.width = `${hwContrib * 1.8}%`;
+      document.getElementById('shap-mutation').textContent = `+${mutContrib}%`;
+      document.getElementById('bar-shap-mutation').style.width = `${mutContrib * 2.2}%`;
+      document.getElementById('shap-irrigation').textContent = `+${irrContrib}%`;
+      document.getElementById('bar-shap-irrigation').style.width = `${irrContrib * 2.5}%`;
+    }
+
+    function loadArchetype(type) {
+      if (type === 'peri-urban') {
+        document.getElementById('param-area').value = 1.8;
+        document.getElementById('param-highway').value = 0.6;
+        document.getElementById('param-mutation').value = 5;
+        document.getElementById('param-urban-dist').value = 3.0;
+        document.getElementById('param-irrigation').value = 25;
+      } else if (type === 'deep-rural') {
+        document.getElementById('param-area').value = 5.2;
+        document.getElementById('param-highway').value = 28.0;
+        document.getElementById('param-mutation').value = 0;
+        document.getElementById('param-urban-dist').value = 35.0;
+        document.getElementById('param-irrigation').value = 85;
+      } else if (type === 'metro-fringe') {
+        document.getElementById('param-area').value = 0.9;
+        document.getElementById('param-highway').value = 0.2;
+        document.getElementById('param-mutation').value = 7;
+        document.getElementById('param-urban-dist').value = 1.2;
+        document.getElementById('param-irrigation').value = 10;
+      }
+      updatePrediction();
+    }
+
+    // --- 8. DASHBOARD CHART.JS INITIALIZATION ---
+    window.addEventListener('DOMContentLoaded', () => {
+      // Trend Line Chart
+      const ctxTrend = document.getElementById('trendChart').getContext('2d');
+      new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+          labels: ['2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025 (P)'],
+          datasets: [
+            {
+              label: 'Non-Agricultural (NA) Land Diversion (Lakh Ha)',
+              data: [1.12, 1.28, 1.45, 1.70, 1.55, 1.95, 2.30, 2.85, 3.20, 3.75],
+              borderColor: '#dc2626',
+              backgroundColor: 'rgba(220, 38, 38, 0.08)',
+              borderWidth: 2.5,
+              tension: 0.35,
+              fill: true,
+              pointBackgroundColor: '#dc2626',
+              pointRadius: 4
+            },
+            {
+              label: 'Protected Eco-Sensitive Buffer Resettlement',
+              data: [0.45, 0.48, 0.52, 0.50, 0.53, 0.58, 0.61, 0.64, 0.66, 0.70],
+              borderColor: '#059669',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointRadius: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { font: { family: 'Fira Sans', size: 11 } }
+            }
+          },
+          scales: {
+            y: {
+              grid: { color: '#e2e8f0' },
+              ticks: { font: { family: 'Fira Code', size: 10 } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'Fira Code', size: 10 } }
+            }
+          }
+        }
+      });
+
+      // Distribution Donut Chart
+      const ctxDist = document.getElementById('distributionChart').getContext('2d');
+      new Chart(ctxDist, {
+        type: 'doughnut',
+        data: {
+          labels: ['Agricultural (Irrigated)', 'Agricultural (Rainfed)', 'Built-up / Urban', 'Forest / Eco-Buffer', 'Fallow / Barren'],
+          datasets: [{
+            data: [42, 28, 14, 11, 5],
+            backgroundColor: [
+              '#059669', // Emerald
+              '#10b981', // Light green
+              '#dc2626', // Crimson
+              '#1e40af', // Gov Blue
+              '#94a3b8'  // Slate
+            ],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                font: { family: 'Fira Sans', size: 10 }
+              }
+            }
+          },
+          cutout: '68%'
+        }
+      });
+
+      // Initialize ML calculation
+      updatePrediction();
+    });
+
+    // --- 9. SPLIT-SCREEN AUTHENTICATION MODAL LOGIC ---
+    function openLoginModal() {
+      const modal = document.getElementById('login-modal');
+      modal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+
+    function closeLoginModal() {
+      const modal = document.getElementById('login-modal');
+      modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+
+    function toggleModalPassword() {
+      const input = document.getElementById('modal-password-input');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    // ── NEW: Full-page login flow ─────────────────────────────────────────
+    const ROLE_META = {
+      Official:   { label: 'Official Email or Employee ID',     ph: 'rajesh.varma@nic.in',         desc: 'Revenue administration, cadastral audits & ML analytics.' },
+      Researcher: { label: 'Institutional Email / ORCID ID',    ph: 'scholar@iitb.ac.in',          desc: 'Access spatial datasets, research APIs & policy simulation.' },
+      Citizen:    { label: '14-digit ULPIN, Mobile or Aadhaar', ph: '27-520-004-98124',            desc: 'View your land parcel, mutation status & RoR documents.' },
+    };
+    const USER_DISPLAY = {
+      Official:   { name: 'Dr. Rajesh Varma',     role: 'Senior Policy Advisor (Official)' },
+      Researcher: { name: 'Dr. Priya Sen',         role: 'Spatial Economics Scholar (IIT)' },
+      Citizen:    { name: 'Ramchandra T. Patil',   role: 'Land Parcel Owner (Citizen)' },
+    };
+
+    function onRoleChange(val) {
+      const m = ROLE_META[val] || ROLE_META.Official;
+      document.getElementById('login-user-label').textContent = m.label;
+      document.getElementById('login-user').placeholder = m.ph;
+      document.getElementById('role-desc').textContent = m.desc;
+    }
+
+    function togglePass() {
+      const p = document.getElementById('login-pass');
+      p.type = p.type === 'password' ? 'text' : 'password';
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const user = document.getElementById('login-user').value.trim();
+      const pass = document.getElementById('login-pass').value;
+      const role = document.getElementById('login-role').value;
+      const userErr = document.getElementById('login-user-err');
+      const passErr = document.getElementById('login-pass-err');
+      const btn     = document.getElementById('login-btn');
+      const btnTxt  = document.getElementById('login-btn-text');
+      const fb      = document.getElementById('login-feedback');
+
+      let ok = true;
+      userErr.classList.toggle('hidden', !!user);
+      if (!user) ok = false;
+      passErr.classList.toggle('hidden', pass.length >= 6);
+      if (pass.length < 6) ok = false;
+      if (!ok) return;
+
+      // Loading state
+      btn.disabled = true;
+      btnTxt.textContent = 'Verifying JWT & Redis session…';
+
+      setTimeout(() => {
+        const ud = USER_DISPLAY[role] || USER_DISPLAY.Official;
+        // Update header name/role
+        const nameEl = document.getElementById('active-user-name');
+        const roleEl = document.getElementById('active-user-role');
+        if (nameEl) nameEl.textContent = ud.name;
+        if (roleEl) roleEl.textContent = ud.role;
+
+        // Transition: fade out login page → show main app
+        const loginPage = document.getElementById('login-page');
+        const mainApp   = document.getElementById('main-app');
+        loginPage.style.opacity = '0';
+        loginPage.style.transition = 'opacity 0.4s ease';
+        setTimeout(() => {
+          loginPage.classList.add('hidden');
+          mainApp.classList.remove('hidden');
+          mainApp.classList.add('flex');
+          requestAnimationFrame(() => { mainApp.style.opacity = '1'; });
+        }, 420);
+
+        btn.disabled = false;
+        btnTxt.textContent = 'Sign In to NLGP';
+      }, 800);
+    }
+
+    // Logout: go back to login page
+    function nlgpLogout() {
+      const mainApp   = document.getElementById('main-app');
+      const loginPage = document.getElementById('login-page');
+      mainApp.style.opacity = '0';
+      setTimeout(() => {
+        mainApp.classList.add('hidden');
+        mainApp.classList.remove('flex');
+        loginPage.style.opacity = '0';
+        loginPage.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          loginPage.style.transition = 'opacity 0.4s ease';
+          loginPage.style.opacity = '1';
+        });
+        document.getElementById('login-user').value = '';
+        document.getElementById('login-pass').value = '';
+      }, 350);
+    }
+  </script>
+</body>
+</html>
